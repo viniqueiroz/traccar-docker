@@ -1,0 +1,99 @@
+services:
+
+  traefik:
+    image: traefik:v3.6.2
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - proxy
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=proxy"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--api.insecure=${TRAEFIK_API_INSECURE:-false}"
+    ports:
+      - "80:80"
+      - "${TRAEFIK_DASHBOARD_BIND:-127.0.0.1}:8080:8080"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - ./traefik/traefik.yaml:/etc/traefik/traefik.yaml:ro
+      - ./traefik/acme.json:/letsencrypt/acme.json
+      - ./traefik/log:/var/log/traefik
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    environment:
+      - TZ=${TZ:-UTC}
+
+
+  database:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "${MYSQL_RANDOM_ROOT_PASSWORD:-yes}"
+      MYSQL_DATABASE: traccar
+      MYSQL_USER: ${TRACCAR_DB_USER:-traccar}
+      MYSQL_PASSWORD: ${TRACCAR_DB_PASS:-traccar}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ${MYSQL_DATA_DIR:-/opt/traccar/data}:/var/lib/mysql
+    networks:
+      - backend
+
+  traccar:
+    image: traccar/traccar:latest
+    restart: unless-stopped
+    depends_on:
+      - database
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traccar.rule=Host(`${TRACCAR_DOMAIN:-traccar.local}`)"
+      - "traefik.http.routers.traccar.entrypoints=${TRACCAR_ENTRYPOINTS:-web}"
+      - "traefik.http.routers.traccar.tls=${TRACCAR_TLS:-false}"
+      - "traefik.http.routers.traccar.tls.certresolver=${CERT_RESOLVER:-}"
+      - "traefik.http.services.traccar.loadbalancer.server.port=8082"
+      - "traefik.http.routers.traccar.middlewares=redirect@file"
+    networks:
+      - proxy
+      - backend
+    environment:
+      CONFIG_USE_ENVIRONMENT_VARIABLES: "true"
+      DATABASE_DRIVER: com.mysql.cj.jdbc.Driver
+      DATABASE_URL: >-
+        jdbc:mysql://database:3306/traccar?zeroDateTimeBehavior=round&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false&allowMultiQueries=true&autoReconnect=true&useUnicode=yes&characterEncoding=UTF-8&sessionVariables=sql_mode=''
+      DATABASE_USER: ${TRACCAR_DB_USER:-traccar}
+      DATABASE_PASSWORD: ${TRACCAR_DB_PASS:-traccar}
+      TZ: ${TZ:-UTC}
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:8082/api/health" ]
+      interval: 2m
+      timeout: 5s
+      start_period: 1h
+      retries: 3
+    ports:
+      - "${TRACCAR_BIND_HOST:-0.0.0.0}:8082:8082" # bind host determined by env; use 127.0.0.1 in prod
+      - "5000-5500:5000-5500"
+    volumes:
+      - ${TRACCAR_DATA_DIR:-/opt/traccar/data}:/opt/traccar/data
+      - ${TRACCAR_LOG_DIR:-/opt/traccar/logs}:/opt/traccar/logs
+
+  autoheal:
+    image: willfarrell/autoheal:latest
+    restart: always
+    environment:
+      AUTOHEAL_CONTAINER_LABEL: all
+      AUTOHEAL_INTERVAL: 60
+      AUTOHEAL_START_PERIOD: 3600
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+networks:
+  proxy:
+    name: proxy
+    driver: bridge
+  backend:
+    name: backend
+    driver: bridge
