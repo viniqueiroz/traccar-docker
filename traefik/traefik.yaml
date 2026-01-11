@@ -29,7 +29,7 @@ certificatesResolvers:
   le:
     acme:
       caServer: "https://acme-v02.api.letsencrypt.org/directory" # production
-      email: "you@example.com" # REPLACE with your email
+      email: "${LE_EMAIL}" # set via env: LE_EMAIL
       storage: "/letsencrypt/acme.json"
       # Use httpChallenge (port 80) for Let's Encrypt
       httpChallenge:

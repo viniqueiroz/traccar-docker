@@ -27,6 +27,7 @@ services:
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
     environment:
       - TZ=${TZ:-UTC}
+      - LE_EMAIL=${LE_EMAIL}
 
 
   database:
