@@ -50,6 +50,7 @@ services:
       - database
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.traccar.rule=Host(`${TRACCAR_DOMAIN:-traccar.local}`)"
       - "traefik.http.routers.traccar.entrypoints=${TRACCAR_ENTRYPOINTS:-web}"
       - "traefik.http.routers.traccar.tls=${TRACCAR_TLS:-false}"

@@ -1,0 +1,55 @@
+# Environment files (keep example)
+.env
+.env.*
+!.env.example
+
+# Docker Compose overrides / local overrides
+docker-compose.override.yml
+docker-compose.*.local.yml
+
+# Traefik
+traefik/acme.json
+traefik/log/
+
+# Traccar & MySQL data and logs
+traccar/data/
+traccar/logs/
+mysql/mysql-data/
+logs/
+
+# Secrets / certificates
+*.key
+*.pem
+*.crt
+
+# Logs and runtime
+*.log
+*.out
+*.pid
+
+# IDEs and editors
+.vscode/
+.idea/
+*.iml
+*.suo
+*.user
+*.cache
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Terraform (if used)
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Misc
+*.bak
+*.tmp
+*~
