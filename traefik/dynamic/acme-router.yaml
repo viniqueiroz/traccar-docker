@@ -1,0 +1,8 @@
+http:
+  routers:
+    acme-rastreia:
+      rule: Host(`rastreia.online`) && PathPrefix(`/.well-known/acme-challenge`)
+      entryPoints:
+        - web
+      priority: 1000
+      service: noop@internal
