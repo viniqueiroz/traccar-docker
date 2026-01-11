@@ -56,7 +56,6 @@ services:
       - "traefik.http.routers.traccar.tls=${TRACCAR_TLS:-false}"
       - "traefik.http.routers.traccar.tls.certresolver=${CERT_RESOLVER:-}"
       - "traefik.http.services.traccar.loadbalancer.server.port=8082"
-      - "traefik.http.routers.traccar.middlewares=redirect@file"
     networks:
       - proxy
       - backend
